@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Puzzle Challenge</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #2c5364;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #203a43, #2c5364);
+            padding: 15px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .info-value {
+            font-size: 1.5rem;
+        }
+        
+        .puzzle-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px auto;
+            max-width: 400px;
+        }
+        
+        .puzzle-cell {
+            aspect-ratio: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #2c5364, #203a43);
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.15s ease-in-out; /* Faster transition for movement */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .puzzle-cell.empty {
+            background: #e0e0e0;
+            color: transparent;
+            cursor: default;
+        }
+        
+        .puzzle-cell:hover:not(.empty) {
+            background: linear-gradient(135deg, #3a687d, #30586b);
+            transform: scale(1.03);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(135deg, #3870a2, #2c5364);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            background: linear-gradient(135deg, #4a82b8, #3a687d);
+        }
+
+        /* Updated Instructions Style */
+        .instructions {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+            border-left: 5px solid #2c5364;
+        }
+        
+        .instructions h3 {
+            color: #2c5364;
+            margin-bottom: 10px;
+            font-size: 1.3rem;
+        }
+        
+        .instructions p {
+            margin-bottom: 8px;
+            color: #333;
+            line-height: 1.4;
+        }
+        
+        .instructions strong {
+            color: #0f2027;
+        }
+        
+        /* Removed .win-message styles as it's no longer used for the modal */
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Number Puzzle Challenge</h1>
+        
+        <div class="game-info">
+            <div class="info-item">
+                <div class="info-label">Time</div>
+                <div class="info-value" id="timer">00:00</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Moves</div>
+                <div class="info-value" id="moves">0</div>
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>How to Play (The 15 Puzzle):</h3>
+            <p>Your goal is to arrange the tiles in **ascending numerical order** from **1 to 15**, with the empty space in the bottom right corner.</p>
+            <p><strong>Rule:</strong> Click on a number tile that is **immediately adjacent** (up, down, left, or right) to the empty space to slide it into the empty slot.</p>
+        </div>
+        
+        <div class="puzzle-container" id="puzzle-container">
+            </div>
+        
+        <div class="controls">
+            <button id="new-game-btn">New Game</button>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Game elements
+            const puzzleContainer = document.getElementById('puzzle-container');
+            const timerElement = document.getElementById('timer');
+            const movesElement = document.getElementById('moves');
+            const newGameBtn = document.getElementById('new-game-btn');
+            
+            // Game state
+            let puzzle = [];
+            let emptyCellIndex = 15; // 0-based index (0-15)
+            let moves = 0;
+            let timer = 0;
+            let timerInterval;
+            let gameStarted = false;
+            const size = 4; // 4x4 grid
+
+            // Helper: Converts time (seconds) to MM:SS format
+            function formatTime(totalSeconds) {
+                const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+                const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+                return `${minutes}:${seconds}`;
+            }
+
+            // Initialize game
+            function initGame() {
+                clearInterval(timerInterval);
+                puzzleContainer.innerHTML = '';
+                moves = 0;
+                timer = 0;
+                gameStarted = false;
+                
+                movesElement.textContent = moves;
+                timerElement.textContent = formatTime(timer);
+                
+                // Create puzzle cells and shuffle
+                createPuzzleCells();
+                shufflePuzzle(); 
+            }
+            
+            // Creates the initial DOM elements for the puzzle
+            function createPuzzleCells() {
+                // Initial solved state: [1, 2, ..., 15, 0]
+                puzzle = Array.from({length: 15}, (_, i) => i + 1);
+                puzzle.push(0); 
+                emptyCellIndex = 15;
+
+                puzzle.forEach((value, index) => {
+                    const cell = document.createElement('div');
+                    cell.className = value === 0 ? 'puzzle-cell empty' : 'puzzle-cell';
+                    cell.textContent = value === 0 ? '' : value;
+                    cell.dataset.index = index;
+                    cell.dataset.value = value;
+                    
+                    cell.addEventListener('click', () => moveCell(index));
+                    
+                    puzzleContainer.appendChild(cell);
+                });
+            }
+
+            // Checks if the current puzzle state is solvable (required for 15 puzzles)
+            function isSolvable(p) {
+                let inversionCount = 0;
+                let grid = p.slice(0, 15); // Exclude the empty cell (0) for inversion count
+
+                for (let i = 0; i < grid.length; i++) {
+                    for (let j = i + 1; j < grid.length; j++) {
+                        // Skip if value is 0 (empty cell, though 0 should be at the end)
+                        if (grid[i] > grid[j]) {
+                            inversionCount++;
+                        }
+                    }
+                }
+                
+                // For a 4x4 grid (even width), solvability depends on the parity of inversions and the row of the empty tile (not strictly necessary here as we shuffle with moves)
+                // Since we use random *valid moves* to shuffle, we ensure solvability automatically.
+                return true; 
+            }
+            
+            // Shuffle the puzzle by making random valid moves
+            function shufflePuzzle() {
+                // Reset to solved state first
+                puzzle = Array.from({length: 15}, (_, i) => i + 1);
+                puzzle.push(0);
+                emptyCellIndex = 15;
+                
+                // Make random valid moves to shuffle
+                const shuffleMoves = 300; // Increase moves for a good mix
+                for (let i = 0; i < shuffleMoves; i++) {
+                    const possibleMoves = getPossibleMoves(emptyCellIndex);
+                    // Avoid immediately reversing the last move (if tracking the last move isn't overkill)
+                    const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                    swapCellsInArray(randomMove, emptyCellIndex);
+                    emptyCellIndex = randomMove;
+                }
+                
+                updatePuzzleView();
+                
+                // Reset stats after shuffle for the player's attempt
+                moves = 0;
+                timer = 0;
+                movesElement.textContent = moves;
+                timerElement.textContent = formatTime(timer);
+            }
+            
+            // Get possible moves (indices adjacent to a given index)
+            function getPossibleMoves(index) {
+                const moves = [];
+                const row = Math.floor(index / size);
+                const col = index % size;
+                
+                // Check up (index - size)
+                if (row > 0) moves.push(index - size);
+                // Check down (index + size)
+                if (row < size - 1) moves.push(index + size);
+                // Check left (index - 1)
+                if (col > 0) moves.push(index - 1);
+                // Check right (index + 1)
+                if (col < size - 1) moves.push(index + 1);
+                
+                return moves;
+            }
+            
+            // Move a cell if it's adjacent to the empty cell
+            function moveCell(index) {
+                // The clicked index must be one of the possible moves from the empty cell's position
+                if (!getPossibleMoves(emptyCellIndex).includes(index)) return;
+                
+                // Start timer on first move
+                if (!gameStarted) {
+                    startTimer();
+                    gameStarted = true;
+                }
+                
+                // Swap cells in the puzzle array
+                swapCellsInArray(index, emptyCellIndex);
+                
+                // The new empty cell is the old clicked cell's position
+                emptyCellIndex = index;
+                
+                // Update DOM view
+                updatePuzzleView();
+                
+                // Update moves count
+                moves++;
+                movesElement.textContent = moves;
+                
+                // Check if puzzle is solved
+                if (isPuzzleSolved()) {
+                    endGame();
+                }
+            }
+            
+            // Swap two cells in the puzzle array
+            function swapCellsInArray(index1, index2) {
+                const temp = puzzle[index1];
+                puzzle[index1] = puzzle[index2];
+                puzzle[index2] = temp;
+            }
+            
+            // Update the puzzle view (DOM)
+            function updatePuzzleView() {
+                const cells = document.querySelectorAll('.puzzle-cell');
+                cells.forEach((cell, index) => {
+                    const value = puzzle[index];
+                    
+                    // Simple swap of classes/text for a non-animated update
+                    cell.textContent = value === 0 ? '' : value;
+                    cell.className = value === 0 ? 'puzzle-cell empty' : 'puzzle-cell';
+                    cell.dataset.value = value;
+                });
+            }
+            
+            // Check if the puzzle is solved
+            function isPuzzleSolved() {
+                // Check if the first 15 tiles are in order
+                for (let i = 0; i < 15; i++) {
+                    if (puzzle[i] !== i + 1) {
+                        return false;
+                    }
+                }
+                // Check if the empty cell (0) is at the very end
+                return puzzle[15] === 0; 
+            }
+            
+            // Start timer
+            function startTimer() {
+                clearInterval(timerInterval);
+                timerInterval = setInterval(() => {
+                    timer++;
+                    timerElement.textContent = formatTime(timer);
+                }, 1000);
+            }
+            
+            // End game - success condition
+            function endGame() {
+                clearInterval(timerInterval);
+                
+                // Alert the user and then redirect
+                const finalTime = timerElement.textContent;
+                const finalMoves = moves;
+
+                alert(`🎉 Puzzle Solved! Time: ${finalTime}, Moves: ${finalMoves}. Redirecting to the next challenge...`);
+
+                // *** REDIRECT IMPLEMENTATION ***
+                // Change 'next_challenge.html' to your actual target page
+                window.location.href = "quiz3.html"; 
+            }
+            
+            // Event listeners
+            newGameBtn.addEventListener('click', initGame);
+            
+            // Initialize the game on load
+            initGame();
+        });
+    </script>
+</body>
+</html>

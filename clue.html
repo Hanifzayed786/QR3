@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Location Message</title>
+  <style>
+    /* Modern font and gradient background */
+    body {
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(270deg, #ff9a9e, #fad0c4, #a1c4fd, #c2e9fb);
+      background-size: 800% 800%;
+      animation: gradientShift 15s ease infinite;
+      overflow: hidden;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    #message-container {
+      padding: 30px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.85);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      min-width: 320px;
+      animation: floatIn 1s ease-out forwards;
+    }
+
+    @keyframes floatIn {
+      from {
+        opacity: 0;
+        transform: translateY(40px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    #reveal-button {
+      padding: 12px 25px;
+      font-size: 1.1em;
+      cursor: pointer;
+      background: linear-gradient(90deg, #ff416c, #ff4b2b);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(255, 75, 43, 0.4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    #reveal-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 10px 25px rgba(255, 75, 43, 0.6);
+    }
+
+    #reveal-button:active {
+      transform: scale(0.95);
+    }
+
+    /* Particle effect when clicked */
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0.8;
+      animation: explode 0.8s ease-out forwards;
+    }
+
+    @keyframes explode {
+      0% {
+        transform: scale(0);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(2);
+        opacity: 0;
+      }
+    }
+
+    #qr-message {
+      font-size: 1.5em;
+      color: #ff416c;
+      font-weight: bold;
+      margin-top: 25px;
+      padding: 15px;
+      border: 2px dashed #ff416c;
+      background-color: #fff5f6;
+      border-radius: 10px;
+      display: none;
+      opacity: 0;
+      animation: slideUp 1s ease forwards, glowPulse 2s infinite alternate;
+    }
+
+    @keyframes slideUp {
+      0% {
+        transform: translateY(40px);
+        opacity: 0;
+      }
+      100% {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes glowPulse {
+      0% { box-shadow: 0 0 10px #ff416c; }
+      100% { box-shadow: 0 0 25px #ff416c; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="message-container">
+    <button id="reveal-button">Click to Reveal QR Location</button>
+    <p id="qr-message"><strong>QR 2 is under the last bench</strong> 🕵️</p>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const button = document.getElementById('reveal-button');
+      const message = document.getElementById('qr-message');
+
+      button.addEventListener('click', (e) => {
+        if (message.style.display === 'none' || message.style.display === '') {
+          message.style.display = 'block';
+          message.style.animation = 'slideUp 1s ease forwards, glowPulse 2s infinite alternate';
+          button.textContent = 'Message Revealed!';
+          button.disabled = true;
+          button.style.background = 'linear-gradient(90deg, #00c9ff, #92fe9d)';
+          createParticles(e.clientX, e.clientY);
+        }
+      });
+
+      function createParticles(x, y) {
+        for (let i = 0; i < 20; i++) {
+          const particle = document.createElement('div');
+          particle.classList.add('particle');
+          document.body.appendChild(particle);
+          const size = Math.random() * 8 + 4;
+          particle.style.width = size + 'px';
+          particle.style.height = size + 'px';
+          particle.style.background = `hsl(${Math.random() * 360}, 70%, 60%)`;
+          particle.style.left = x + (Math.random() * 100 - 50) + 'px';
+          particle.style.top = y + (Math.random() * 100 - 50) + 'px';
+          setTimeout(() => particle.remove(), 800);
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>
